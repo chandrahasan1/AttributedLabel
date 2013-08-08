@@ -13,6 +13,11 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     // Override point for customization after application launch.
+    NSError *error;
+    self.dataDetector = [NSDataDetector dataDetectorWithTypes:NSTextCheckingTypeLink + NSTextCheckingTypePhoneNumber error:&error];
+    if (error) {
+        NSLog(@"Aha nope");
+    }
     return YES;
 }
 							
