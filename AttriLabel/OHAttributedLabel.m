@@ -32,7 +32,7 @@
 
 #import "OHAttributedLabel.h"
 #import "NSAttributedString+Attributes.h"
-#import "ITAppDelegate.h"
+#import "AppDelegate.h"
 
 #define OHAttributedLabel_WarnAboutKnownIssues 0
 
@@ -240,9 +240,30 @@ BOOL CTRunContainsCharactersFromStringRange(CTRunRef run, NSRange range) {
 	NSMutableAttributedString* str = [self.attributedText mutableCopy];
 	if (!str) return nil;
 	
+    
+    // Links set by text attribute
+    [self.attributedText enumerateAttribute:@"DTLink" inRange:NSMakeRange(0, [self.attributedText length])
+                                 options:0 usingBlock:^(id value, NSRange range, BOOL *stop)
+     {
+         if (value)
+         {
+             NSTextCheckingResult* result = [NSTextCheckingResult linkCheckingResultWithRange:range URL:(NSURL*)value];
+             int32_t uStyle = self.underlineLinks ? kCTUnderlineStyleSingle : kCTUnderlineStyleNone;
+			 UIColor* thisLinkColor = (self.delegate && [self.delegate respondsToSelector:@selector(colorForLink:underlineStyle:)])
+			 ? [self.delegate colorForLink:result underlineStyle:&uStyle] : self.linkColor;
+			 
+             
+			 if (thisLinkColor)
+				 [str setTextColor:thisLinkColor range:[result range]];
+			 if (uStyle>0)
+				 [str setTextUnderlineStyle:uStyle range:[result range]];
+         }
+     }];
+    
 	NSString* plainText = [str string];
 	if (plainText && (self.automaticallyAddLinksForType > 0)) {
-		NSDataDetector* linkDetector = [[ITAppDelegate sharedAppDelegate] dataDetector];
+        AppDelegate *appDelegate = [UIApplication sharedApplication].delegate;
+		NSDataDetector* linkDetector = [appDelegate dataDetector];
 		[linkDetector enumerateMatchesInString:plainText options:0 range:NSMakeRange(0,[plainText length])
 									usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop)
 		 {
@@ -285,11 +306,31 @@ BOOL CTRunContainsCharactersFromStringRange(CTRunRef run, NSRange range) {
 }
 
 -(NSTextCheckingResult*)linkAtCharacterIndex:(CFIndex)idx {
+    
 	__block NSTextCheckingResult* foundResult = nil;
 	
 	NSString* plainText = [_attributedText string];
+    
+    //------------- Links set by text attribute
+    if (_attributedText)
+    {
+        [_attributedText enumerateAttribute:@"DTLink" inRange:NSMakeRange(0, [_attributedText length])
+                                    options:0 usingBlock:^(id value, NSRange range, BOOL *stop)
+         {
+             if (value && NSLocationInRange((NSUInteger)idx, range))
+             {
+                 NSTextCheckingResult* result = [NSTextCheckingResult linkCheckingResultWithRange:range URL:(NSURL*)value];
+                 foundResult = [[result retain] autorelease];
+                 *stop = YES;
+             }
+         }];
+    }
+    
+    //-----------------------------
+    
 	if (plainText && (self.automaticallyAddLinksForType > 0)) {
-		NSDataDetector* linkDetector = [[ITAppDelegate sharedAppDelegate] dataDetector];
+		AppDelegate *appDelegate = [UIApplication sharedApplication].delegate;
+		NSDataDetector* linkDetector = [appDelegate dataDetector];
 		[linkDetector enumerateMatchesInString:plainText options:0 range:NSMakeRange(0,[plainText length])
 									usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop)
 		 {

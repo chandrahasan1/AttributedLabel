@@ -7,8 +7,9 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "OHAttributedLabel.h"
 
-@interface ViewController : UIViewController
+@interface ViewController : UIViewController<OHAttributedLabelDelegate>
 @property (weak, nonatomic) IBOutlet UILabel *mAttriLabel;
 
 @end
